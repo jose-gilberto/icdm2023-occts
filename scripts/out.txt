@@ -1,0 +1,93 @@
+ResidualEncoder(
+  (residual_net): ResidualBlock(
+    (residual_modules): ModuleList(
+      (0): ResidualModule(
+        (convolution_1): Conv1d(1, 64, kernel_size=(7,), stride=(1,), padding=same, bias=False)
+        (batchnorm_1): BatchNorm1d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (convolution_2): Conv1d(64, 64, kernel_size=(5,), stride=(1,), padding=same, bias=False)
+        (batchnorm_2): BatchNorm1d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (convolution_3): Conv1d(64, 64, kernel_size=(3,), stride=(1,), padding=same, bias=False)
+        (batchnorm_3): BatchNorm1d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (activation): LeakySineLU()
+        (shortcut): Sequential(
+          (0): Conv1d(1, 64, kernel_size=(1,), stride=(1,), padding=same, bias=False)
+          (1): BatchNorm1d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        )
+      )
+      (1): ResidualModule(
+        (convolution_1): Conv1d(64, 128, kernel_size=(7,), stride=(1,), padding=same, bias=False)
+        (batchnorm_1): BatchNorm1d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (convolution_2): Conv1d(128, 128, kernel_size=(5,), stride=(1,), padding=same, bias=False)
+        (batchnorm_2): BatchNorm1d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (convolution_3): Conv1d(128, 128, kernel_size=(3,), stride=(1,), padding=same, bias=False)
+        (batchnorm_3): BatchNorm1d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (activation): LeakySineLU()
+        (shortcut): Sequential(
+          (0): Conv1d(64, 128, kernel_size=(1,), stride=(1,), padding=same, bias=False)
+          (1): BatchNorm1d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        )
+      )
+      (2): ResidualModule(
+        (convolution_1): Conv1d(128, 128, kernel_size=(7,), stride=(1,), padding=same, bias=False)
+        (batchnorm_1): BatchNorm1d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (convolution_2): Conv1d(128, 128, kernel_size=(5,), stride=(1,), padding=same, bias=False)
+        (batchnorm_2): BatchNorm1d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (convolution_3): Conv1d(128, 128, kernel_size=(3,), stride=(1,), padding=same, bias=False)
+        (batchnorm_3): BatchNorm1d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (activation): LeakySineLU()
+        (shortcut): Sequential(
+          (0): Conv1d(128, 128, kernel_size=(1,), stride=(1,), padding=same, bias=False)
+          (1): BatchNorm1d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        )
+      )
+    )
+  )
+  (fc): Linear(in_features=128, out_features=32, bias=True)
+)
+ResidualDecoder(
+  (residual_net): ResidualTransposeBlock(
+    (residual_modules): ModuleList(
+      (0): ResidualTransposeModule(
+        (convolution_1): ConvTranspose1d(128, 128, kernel_size=(3,), stride=(1,), padding=(1,), bias=False)
+        (batchnorm_1): BatchNorm1d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (convolution_2): ConvTranspose1d(128, 128, kernel_size=(5,), stride=(1,), padding=(2,), bias=False)
+        (batchnorm_2): BatchNorm1d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (convolution_3): ConvTranspose1d(128, 128, kernel_size=(7,), stride=(1,), padding=(3,), bias=False)
+        (batchnorm_3): BatchNorm1d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (activation): LeakySineLU()
+        (shortcut): Sequential(
+          (0): Conv1d(128, 128, kernel_size=(1,), stride=(1,), padding=same, bias=False)
+          (1): BatchNorm1d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        )
+      )
+      (1): ResidualTransposeModule(
+        (convolution_1): ConvTranspose1d(128, 64, kernel_size=(3,), stride=(1,), padding=(1,), bias=False)
+        (batchnorm_1): BatchNorm1d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (convolution_2): ConvTranspose1d(64, 64, kernel_size=(5,), stride=(1,), padding=(2,), bias=False)
+        (batchnorm_2): BatchNorm1d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (convolution_3): ConvTranspose1d(64, 64, kernel_size=(7,), stride=(1,), padding=(3,), bias=False)
+        (batchnorm_3): BatchNorm1d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (activation): LeakySineLU()
+        (shortcut): Sequential(
+          (0): Conv1d(128, 64, kernel_size=(1,), stride=(1,), padding=same, bias=False)
+          (1): BatchNorm1d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        )
+      )
+      (2): ResidualTransposeModule(
+        (convolution_1): ConvTranspose1d(64, 1, kernel_size=(3,), stride=(1,), padding=(1,), bias=False)
+        (batchnorm_1): BatchNorm1d(1, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (convolution_2): ConvTranspose1d(1, 1, kernel_size=(5,), stride=(1,), padding=(2,), bias=False)
+        (batchnorm_2): BatchNorm1d(1, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (convolution_3): ConvTranspose1d(1, 1, kernel_size=(7,), stride=(1,), padding=(3,), bias=False)
+        (batchnorm_3): BatchNorm1d(1, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (activation): LeakySineLU()
+        (shortcut): Sequential(
+          (0): Conv1d(64, 1, kernel_size=(1,), stride=(1,), padding=same, bias=False)
+          (1): BatchNorm1d(1, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        )
+      )
+    )
+  )
+  (upsample): Linear(in_features=128, out_features=15360, bias=True)
+  (fc): Linear(in_features=32, out_features=128, bias=True)
+)

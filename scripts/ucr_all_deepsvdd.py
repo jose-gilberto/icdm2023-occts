@@ -177,7 +177,7 @@ class DeepSVDD(pl.LightningModule):
         return np.quantile(np.sqrt(distance.clone().data.cpu().numpy()), 1 - nu)
 
     def configure_optimizers(self) -> Any:
-        optimizer = torch.optim.Adam(self.parameters(), lr=1e-5, weight_decay=1e-6, amsgrad=False)
+        optimizer = torch.optim.Adam(self.parameters(), lr=1e-1, weight_decay=1e-4, amsgrad=False)
         scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[150], gamma=0.1)
         return [optimizer], [scheduler]
     
