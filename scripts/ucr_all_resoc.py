@@ -527,6 +527,6 @@ for dataset in UCR_DATASETS:
         results['precision'].append(metrics['precision'])
 
 metrics = pd.DataFrame(results)
-metrics.to_csv('./ucr_deepsvdd.csv', index=False)
+metrics.to_csv('./ucr_resoc.csv', index=False)
 
 
