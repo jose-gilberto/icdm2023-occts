@@ -6,7 +6,7 @@ import pandas as pd
 import numpy as np
 import pytorch_lightning as pl
 from sklearn.metrics import f1_score, accuracy_score, recall_score, precision_score
-from typing import Any, List, Optional, Tuple
+from typing import Any, List, Tuple
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -32,7 +32,7 @@ class LeakySineLU(nn.Module):
         super().__init__()
         
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return (torch.sin(x) ** 2) + x
+        return torch.max(0.1 * ((torch.sin(x) ** 2) + x), (torch.sin(x) ** 2) + x)
 
 
 class ResidualModule(nn.Module):
@@ -266,22 +266,23 @@ class ResOC(pl.LightningModule):
         super().__init__()
         self.representation_dim = representation_dim
         self.encoder = ResidualEncoder(in_channels=1, out_channels=64, representation_dim=representation_dim)
+        self.decoder = ResidualDecoder(in_channels=64, out_channels=1, representation_dim=representation_dim, sequence_length=sequence_length)
         
         self.center = None
-        self.R = torch.tensor(0.)
+        self.R = torch.tensor(0)
         self.nu = 0.1
         self.warmup_epochs = 10
-        
-        self.mse_criteria = nn.MSELoss()
+        self.sequence_length = sequence_length
         
     def configure_optimizers(self) -> Any:
-        optimizer = torch.optim.Adam(self.parameters(), lr=1e-5, weight_decay=1e-6, amsgrad=False)
+        optimizer = torch.optim.Adam(self.parameters(), lr=1e-5, weight_decay=1e-6)
         scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[100], gamma=0.1)
         return [optimizer], [scheduler]
     
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return self.encoder(x)
-    
+        z = self.encoder(x)
+        return z, self.decoder(z)
+
     def init_center(self, dataloader: DataLoader, eps: float = 0.01):
         n_samples = 0
         c = torch.zeros(self.representation_dim, device=self.device)
@@ -290,11 +291,12 @@ class ResOC(pl.LightningModule):
         with torch.no_grad():
             for x, _ in dataloader:
                 x = x.to(self.device)
-                z = self(x)
-                n_samples += 1
+                z, x_hat = self(x)
+                n_samples += z.shape[0]
                 c += torch.sum(z, dim=0)
                 
         c /= n_samples
+
         c[(abs(c) < eps) & (c < 0)] = -eps
         c[(abs(c) < eps) & (c > 0)] = eps
 
@@ -309,23 +311,31 @@ class ResOC(pl.LightningModule):
 
         x, y = batch
         self.center = self.center.to(self.device)
-        z = self.encoder(x)
+        z, x_hat = self(x)
 
         distances = torch.sum((z - self.center) ** 2, dim=1)
         scores = distances - self.R ** 2
+        # loss_1 = self.R ** 2 + torch.mean(torch.max(torch.zeros_like(scores), scores))
+        # loss_1 = torch.mean(distances)
 
-        loss = self.R ** 2 + (1 / self.nu) * torch.mean(torch.max(torch.zeros_like(scores), scores))
+        loss_2 = torch.sum((x_hat - x) ** 2, dim=tuple(range(1, x_hat.dim())))
+        loss_2 = torch.mean(loss_2) # / self.sequence_length
+        
+        
+        loss_1 = self.R ** 2 * torch.mean(torch.max(torch.zeros_like(scores), scores))
+
+        loss = loss_1  + loss_2
+        self.log('train_loss', loss, prog_bar=True, on_step=False, on_epoch=True)
+        
         
         if self.current_epoch >= self.warmup_epochs:
             self.R.data = self.get_radius(distances).to(self.device)
-            
-        self.log('train_loss', loss, prog_bar=True, on_step=False, on_epoch=True)
 
         return loss
     
     def test_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int) -> None:
         x, y = batch
-        z = self(x)
+        z, x_hat = self(x)
 
         distances = torch.sum((z - self.center) ** 2, dim=1)
         scores = distances - self.R ** 2
@@ -342,7 +352,7 @@ class ResOC(pl.LightningModule):
 
 
 UCR_DATASETS = [
-    # 'Adiac',
+    'Adiac',
     # 'ArrowHead',
     # 'Beef',
     # 'BeetleFly',
@@ -427,34 +437,34 @@ UCR_DATASETS = [
     # 'Worms',
     # 'WormsTwoClass',
     # 'Yoga',
-    'ACSF1',
-    'BME',
-    'Chinatown',
-    'Crop',
-    'EOGHorizontalSignal',
-    'EOGVerticalSignal',
-    'EthanolLevel',
-    'FreezerRegularTrain',
-    'FreezerSmallTrain',
-    'Fungi',
-    'GunPointAgeSpan',
-    'GunPointMaleVersusFemale',
-    'GunPointOldVersusYoung',
-    'HouseTwenty',
-    'InsectEPGRegularTrain',
-    'InsectEPGSmallTrain',
-    'MixedShapesRegularTrain',
-    'MixedShapesSmallTrain',
-    'PigAirwayPressure',
-    'PigArtPressure',
-    'PigCVP',
-    'PowerCons',
-    'Rock',
-    'SemgHandGenderCh2',
-    'SemgHandMovementCh2',
-    'SemgHandSubjectCh2',
-    'SmoothSubspace',
-    'UMD'
+    # 'ACSF1',
+    # 'BME',
+    # 'Chinatown',
+    # 'Crop',
+    # 'EOGHorizontalSignal',
+    # 'EOGVerticalSignal',
+    # 'EthanolLevel',
+    # 'FreezerRegularTrain',
+    # 'FreezerSmallTrain',
+    # 'Fungi',
+    # 'GunPointAgeSpan',
+    # 'GunPointMaleVersusFemale',
+    # 'GunPointOldVersusYoung',
+    # 'HouseTwenty',
+    # 'InsectEPGRegularTrain',
+    # 'InsectEPGSmallTrain',
+    # 'MixedShapesRegularTrain',
+    # 'MixedShapesSmallTrain',
+    # 'PigAirwayPressure',
+    # 'PigArtPressure',
+    # 'PigCVP',
+    # 'PowerCons',
+    # 'Rock',
+    # 'SemgHandGenderCh2',
+    # 'SemgHandMovementCh2',
+    # 'SemgHandSubjectCh2',
+    # 'SmoothSubspace',
+    # 'UMD'
 ]
 
 
@@ -520,15 +530,15 @@ for dataset in UCR_DATASETS:
 
         metrics = trainer.test(resoc, dataloaders=test_loader)[0]
         
-        results['dataset'].append(dataset)
-        results['model'].append('resoc')
-        results['label'].append(label)
-        results['accuracy'].append(metrics['accuracy_score'])
-        results['f1'].append(metrics['f1'])
-        results['recall'].append(metrics['recall'])
-        results['precision'].append(metrics['precision'])
+#         results['dataset'].append(dataset)
+#         results['model'].append('resoc')
+#         results['label'].append(label)
+#         results['accuracy'].append(metrics['accuracy_score'])
+#         results['f1'].append(metrics['f1'])
+#         results['recall'].append(metrics['recall'])
+#         results['precision'].append(metrics['precision'])
 
-metrics = pd.DataFrame(results)
-metrics.to_csv('./ucr_resoc.csv', index=False)
+# metrics = pd.DataFrame(results)
+# metrics.to_csv('./ucr_resoc.csv', index=False)
 
 
